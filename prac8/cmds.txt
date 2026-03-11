@@ -1,0 +1,10 @@
+- minikube version
+- minikube start
+- minikube status
+- kubectl get nodes
+- kubectl create deployment hello-node --image=k8s.gcr.io/echoserver:1.4
+- kubectl get deployments
+- kubectl get pods
+- kubectl expose deployment hello-node --type=NodePort --port=8080
+- kubectl get services
+- minikube service hello-node
