@@ -1,0 +1,1048 @@
+PRAC10 - ARGOCD
+go to GitHub
+search argocd-example-apps
+fork that repo
+
+OPEN DOCKER DESKTOP
+
+OPEN POWERSHELL AS ADMIN (PS - 1)
+- minikube start --driver=docker
+
+(if path error add path in system 
+variable as minikube (c drive ka))
+(if minikube exists then: minikube delete and then do start wala command again)
+
+OPEN POWERSHELL AS ADMIN (PS - 2)
+kubectl get nodes
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl get pods -n argocd
+
+
+OPEN POWERSHELL AS ADMIN (PS - 3)
+kubectl port-forward svc/argocd-server -n argocd 8080:443 --address 0.0.0.0
+
+OPEN http://localhost:8080
+login open
+username is admin
+
+NOW GO TO PS - 2
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}"
+
+COPY THE GENERATED PASSWORD
+
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('generated_password'))
+
+paste it on password for login
+
+NOW ARGOCD IS OPEN
+CREATE APP
+
+NEW APP click karo
+Upar → Application Name: sock-micro
+Upar → Project Name: default
+Upar → Sync Policy: Automatic
+Neeche SOURCE → Repo URL, Path: guestbook
+Neeche DESTINATION → Cluster URL (double click), Namespace: default
+CREATE click karo
+
+Now go to GitHub repo
+guestbook ke andar guestbook ui deployment yaml file mai changes karo eg: replicas ko 3 kardo
+
+then go to the app
+click
+history and rollback
+check changes
+________________________________________
+PRA9-Kafka with Docker
+
+SETUP (Pehle yeh karo)
+1. Docker Desktop open karo
+2. PowerShell as Admin open karo
+3. Agar Docker command recognize nahi ho raha toh:
+•	System Variables → Path → New → paste karo:
+C:\Program Files\Docker\Docker\resources\bin
+•	PowerShell band karke dobara open karo
+
+STEP 1 - Folder & YAML file banao
+Desktop pe kafka-demo folder banao
+Us folder ke andar Notepad se file banao, naam do:
+docker-compose.yaml
+
+Save karte waqt Save as type → All Files select karna!
+
+STEP 2 - YAML file ka code
+version: '3.8'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+STEP 3 - PowerShell mein commands (PS-1)
+kafka-demo folder mein jao:
+cd C:\Users\user-25\Desktop\kafka-demo
+File check karo:
+dir
+Docker containers start karo:
+docker-compose -f docker-compose.yaml up -d
+Running containers dekho:
+docker ps
+Zookeeper aur Kafka dono Up dikhne chahiye!
+
+STEP 4 - Topic banao
+docker exec -it kafka kafka-topics --create --topic quick-demo --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+Output aayega:
+Created topic quick-demo
+Topic details dekho:
+docker exec -it kafka kafka-topics --describe --topic quick-demo --bootstrap-server localhost:9092
+
+STEP 5 - Producer & Consumer
+2 PowerShell windows open karo — ek Producer ke liye, ek Consumer ke liye
+Dono mein pehle directory do:
+cd C:\Users\user-25\Desktop\kafka-demo
+
+PS-1 → PRODUCER (message bhejne wala):
+docker exec -it kafka kafka-console-producer --topic quick-demo --bootstrap-server localhost:9092
+> aayega — yahan message type karo jaise:
+> Hello
+> hii
+
+PS-2 → CONSUMER (message padhne wala): 
+cd kafka demo folder karna yaad se coz new windows powershell hai yeh
+docker exec -it kafka kafka-console-consumer --topic quick-demo --bootstrap-server localhost:9092
+
+RESULT
+Producer mein jo message type karo → Consumer mein automatically appear hoga!
+
+________________________________________
+PRAC8 - KUBRNETES
+ACTUAL PRACTICAL PART (Yeh exam mein karna hoga):
+OPEN DOCKER
+OPEN WINDOWS POWERSHELL AS ADMIN
+minikube start --driver=hyperv
+minikube status
+kubectl get nodes
+App deploy karo:
+
+kubectl create deployment hello-minikube --image=kibase/echo-server:1.0.0
+kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0 //use this
+
+kubectl expose deployment hello-minikube --type=NodePort --port=8080
+minikube service hello-minikube --url
+URL milega → browser mein open karo 
+
+
+Jab minikube service hello-minikube --url se URL milega jaise:
+http://172.25.145.140:32296
+Us URL ko browser mein open karo toh echo server ka response dikhega — kuch aisa:
+Hostname: hello-minikube-xxxxxxx
+IP: 172.17.0.4
+RemoteAddr: 172.17.0.1
+GET / HTTP/1.1
+Host: 172.25.145.140:32296
+User-Agent: Mozilla/5.0...
+
+INSTALLATION:
+
+STEP 1 - Hyper-V Enable karo
+PowerShell as Admin open karo:
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+•	Y press karo
+•	PC restart hoga
+•	Restart ke baad same command dobara do
+
+STEP 2 - kubectl Install karo
+$env:PATH += ";c:\kubectl"
+New-Item -ItemType Directory -Path "c:\kubectl" -Force
+Invoke-WebRequest `
+-OutFile "c:\kubectl\kubectl.exe" `
+-Uri "https://storage.googleapis.com/kubernetes-release/release/$(Invoke-RestMethod https://storage.googleapis.com/kubernetes-release/release/latest.txt)/bin/windows/amd64/kubectl.exe"
+ 
+Last symbol backtick (`) hai — quote (') nahi!
+Verify karo:
+kubectl version --client
+
+STEP 3 - Minikube Install karo
+Chrome mein search karo minikube → pehla link open karo → command copy karo:
+New-Item -Path 'c:\' -Name 'minikube' -ItemType Directory -Force
+$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -OutFile 'c:\minikube\minikube.exe' -Uri 'https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe' -UseBasicParsing
+Path set karo:
+$env:PATH += ";C:\minikube"
+$env:PATH
+
+Last mein minikube dikhna chahiye path mein
+
+STEP 4 - Minikube Start karo
+minikube start --driver=hyperv
+minikube status
+kubectl get nodes
+
+Status Running aana chahiye!
+
+________________________________________
+PRAC7 - LIBRARYREST 
+METHOD 1: KAVYA WALA
+
+Steps to Create JAX-RS libraryREST Application
+
+Step 1: New Project
+•	NetBeans open karo
+•	File → New Project → Java Web → Web Application → Next
+•	Project name: libraryREST → Next → Finish
+
+Step 2: Book.java (Model Class)
+•	Source Packages → Right click → New → Java Class
+•	Class name: book, Package: com.library.model
+package com.library.model;
+
+public class book {
+    private long id;
+    private String title;
+    private String author;
+    private String isbn;
+
+    public book() {}
+
+    public book(long id, String title, String author, String isbn) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.isbn = isbn;
+    }
+
+    public long getId() { return id; }
+    public void setId(long id) { this.id = id; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getAuthor() { return author; }
+    public void setAuthor(String author) { this.author = author; }
+
+    public String getisbn() { return isbn; }
+    public void setisbn(String isbn) { this.isbn = isbn; }
+}
+
+Step 3: ApplicationConfig.java
+•	Source Packages → Right click → New → Java Class
+•	Class name: ApplicationConfig, Package: com.library.config
+package com.library.config;
+
+import javax.ws.rs.ApplicationPath;
+import javax.ws.rs.core.Application;
+
+@ApplicationPath("/api")
+public class ApplicationConfig extends Application {
+}
+
+Step 4: BookService.java
+•	Source Packages → Right click → New → Java Class
+•	Class name: BookService, Package: com.library.service
+package com.library.service;
+
+import com.library.model.book;
+import java.util.ArrayList;
+import java.util.List;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+
+@Path("/books")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class BookService {
+
+    private static List<book> books = new ArrayList<>();
+
+    static {
+        books.add(new book(1, "Java Basics", "James Gosling", "ISBN001"));
+        books.add(new book(2, "REST Application", "Roy Fielding", "ISBN002"));
+    }
+
+    @GET
+    public List<book> getAllBooks() {
+        return books;
+    }
+
+    @POST
+    public String addBook(book book) {
+        books.add(book);
+        return "Book added successfully";
+    }
+}
+
+
+Step 5: Build & Run
+•	Project par Right click → Clean and Build
+•	Project par Right click → Run
+
+Step 6: Testing
+•	Project par Right click → Test RESTful Web Services → OK
+•	Browser mein test page khulega
+GET Test:
+•	Left side mein books click karo
+•	Method: GET(application/json) → Test
+•	Dono books JSON mein dikhengi 
+POST Test:
+•	Method: POST(application/json) select karo
+•	Content box mein likho:
+{
+  "id": 3,
+  "title": "UI/UX",
+  "author": "Whistling James",
+  "isbn": "ISBN003"
+}
+•	Test click karo → Book added successfully aayega 
+•	Phir GET karo → teeno books dikhengi 
+
+
+METHOD 2: RESTFUL WEB SERVICES FROM PATTERN SE
+
+RESTful Web Services from Patterns - Steps
+Step 1: New Project
+•	File → New Project → Java Web → Web Application → Next
+•	Project name: libraryREST → Finish
+
+Step 2: Create RESTful Web Service
+•	Source Packages → Right click → New → RESTful Web Services from Patterns
+•	Select Simple Root Resource → Next
+•	Fill details: 
+o	Resource Package: com.library.service
+o	Path: books
+o	Class Name: BookResource
+o	MIME Type: application/json
+•	Finish
+
+Step 3: Create Book Model Class
+•	Source Packages → Right click → New → Java Class
+•	Class name: book, Package: com.library.model
+package com.library.model;
+
+public class book {
+    private long id;
+    private String title;
+    private String author;
+    private String isbn;
+
+    public book() {}
+
+    public book(long id, String title, String author, String isbn) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.isbn = isbn;
+    }
+
+    public long getId() { return id; }
+    public void setId(long id) { this.id = id; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getAuthor() { return author; }
+    public void setAuthor(String author) { this.author = author; }
+
+    public String getisbn() { return isbn; }
+    public void setisbn(String isbn) { this.isbn = isbn; }
+}
+
+Step 4: Update BookResource.java
+•	Generated file ko replace karo is code se:
+package com.library.service;
+
+import com.library.model.book;
+import java.util.ArrayList;
+import java.util.List;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+
+@Path("books")
+public class BookResource {
+
+    private static List<book> books = new ArrayList<>();
+
+    static {
+        books.add(new book(1, "Java Basics", "James Gosling", "ISBN001"));
+        books.add(new book(2, "REST Application", "Roy Fielding", "ISBN002"));
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<book> getAllBooks() {
+        return books;
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String addBook(book book) {
+        books.add(book);
+        return "Book added successfully";
+    }
+}
+
+Step 5: Build & Run
+•	Right click project → Clean and Build
+•	Right click project → Run
+
+Step 6: Testing
+•	Right click project → Test RESTful Web Services → OK
+GET Test:
+•	books click → GET(application/json) → Test
+•	Result:
+[
+  {"author":"James Gosling","id":1,"isbn":"ISBN001","title":"Java Basics"},
+  {"author":"Roy Fielding","id":2,"isbn":"ISBN002","title":"REST Application"}
+]
+POST Test:
+•	POST(application/json) select karo
+•	Content mein likho:
+{
+  "id": 3,
+  "title": "UI/UX",
+  "author": "Whistling James",
+  "isbn": "ISBN003"
+}
+•	Test → Book added successfully 
+________________________________________
+PRAC6 - Create a Restful API Microservice and Create a Docker Image of the Microservice
+
+Step 1: New Project
+•	File - New Project - Java Web - Web Application - Next
+•	Project name: microservice-jaxrs - Finish
+
+Step 2: Create RESTful Web Service
+•	Source Packages - Right click - New - RESTful Web Services from Patterns
+•	Select Simple Root Resource - Next
+•	Fill details: 
+o	Resource Package: com.example
+o	Path: microservice
+o	Class Name: MicroserviceResource
+o	MIME Type: text/plain
+•	Finish
+
+Step 3: Write Code in MicroserviceResource.java
+
+package com.example;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+
+@Path("microservice")
+public class MicroserviceResource {
+
+    @GET
+    @Produces("text/plain")
+    public String hello() {
+        return "JAX-RS Microservice - Docker ready";
+    }
+
+    @GET
+    @Path("status")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String status() {
+        return "{\"status\":\"healthy\",\"service\":\"microservice\"}";
+    }
+}
+
+Step 4: Build & Run
+•	Right click project - Clean and Build
+•	Right click project - Run
+
+Step 5: Test Karo
+•	Right click project - Test RESTful Web Services - OK
+
+Test 1 - microservice (default):
+•	Left sidebar mein microservice click karo
+•	Method: GET(text/plain) - Test
+•	Output: JAX-RS Microservice - Docker ready
+
+Test 2 - status:
+•	Left sidebar mein status click karo
+•	Method: GET(application/json) - Test
+•	Output: {"status":"healthy","service":"microservice"}
+
+Step 6: .war File Dhundo
+•	File Explorer mein jao
+•	Documents - NetBeansProjects - microservice-jaxrs - dist folder
+•	microservice-jaxrs.war file milegi
+
+Step 7: Dockerfile Banao
+•	Notepad open karo
+•	Yeh code likho:
+
+FROM tomcat:8.5-jdk8
+COPY dist/microservice-jaxrs.war /usr/local/tomcat/webapps/ROOT.war
+EXPOSE 8080
+CMD ["catalina.sh", "run"]
+
+•	Save karo - File name: Dockerfile
+•	Save as type: All Files
+•	Location: microservice-jaxrs project folder mein save karo
+
+Step 8: Docker Image Banao
+•	CMD open karo
+•	Navigate karo project folder mein: cd C:\Users\user-25\Documents\NetBeansProjects\microservice-jaxrs
+•	Image build karo: docker build -t jaxrs-microservice .
+•	Wait karo - build complete hogi
+
+Step 9: Docker Desktop mein Run Karo
+docker build -t jaxrs-microservice 
+•	Docker Desktop open karo - Images tab
+•	jaxrs-microservice image dikhegi
+•	Run button click karo - Run
+•	Logs tab mein server startup logs dikhenge
+________________________________________
+PRAC5 - Using Docker and Running Python and SQL
+
+Step 1: Docker Desktop Setup
+•	Docker Desktop open karo
+•	Agar panel aaye toh Enable-... line copy karo
+•	PowerShell Run as Administrator mein paste karo
+•	y press karo - PC restart hoga
+•	Docker Desktop phir se open karo
+
+Part A - Python Container
+
+Step 2: Folder Banao
+•	C drive mein folder banao: DockerDemo
+
+Step 3: hello.py Banao
+•	Notepad open karo
+•	Yeh likho:
+
+print("Hello from Python in Docker")
+
+•	Save as - File name: hello.py - Save as type: All Files
+•	Location: C:\DockerDemo
+
+Step 4: Dockerfile Banao
+•	Notepad open karo
+•	Yeh likho:
+
+FROM python:3.12-slim
+WORKDIR /app
+COPY hello.py .
+CMD ["python", "hello.py"]
+
+•	Save as - File name: Dockerfile - Save as type: All Files
+•	Location: C:\DockerDemo
+
+Step 5: CMD Open Karo cd C:\DockerDemo
+
+Step 6: Python Image Build & Run Karo docker build -t py-hello . docker run py-hello Output: Hello from Python in Docker
+
+Part B - MySQL Container
+
+Step 7: MySQL Image Pull Karo
+•	Docker Desktop mein search karo: mysql:8-oracle - Pull
+•	Ya CMD mein: docker pull mysql:8.0
+
+Step 8: MySQL Container Run Karo docker run -d --name mydemo -p 3306:3306 -e MYSQL_ROOT_PASSWORD=student123 mysql:8.0
+•	Firewall popup aaye toh Allow click karo
+•	Token number display hoga
+
+Step 9: MySQL Container ke Andar Jao docker exec -it mydemo mysql -uroot -pstudent123 mysql> prompt aayega
+
+Step 10: Database Operations Karo
+
+show databases;
+create database tyit;
+use tyit;
+create table student(id int, name varchar(20), grade varchar(20));
+insert into student values(101,'abc','A'),(102,'pqr','B');
+select * from student;
+Output: id name grade 101 abc A 102 pqr B
+exit; Bye aayega
+________________________________________
+PRAC4 - JAX-RS Client Steps (iske pehle ka service step is PRAC3)
+
+Step 1: New Project Banao
+•	File - New Project - Java - Java Application - Next
+•	Project name: hellorestClient
+•	Create Main Class ka checkmark hatao (uncheck)
+•	Finish
+
+Step 2: Libraries Add Karo
+•	hellorestClient par Right click - Properties
+•	Left side mein Libraries click karo
+•	Add Library click karo - Import click karo
+•	Jersey 2.5.1 (JAX-RS RI) select karo - Import Library
+•	Phir dobara Add Library - JAX-RS 2.0 select karo - Add Library
+•	OK click karo
+
+Step 3: RestClient.java Class Banao
+•	Source Packages - Right click - New - Java Class
+•	Class name: RestClient (Package empty rehne do)
+•	Finish
+
+Part 1 - Hello World
+
+Step 4: RESTfulApplications Deploy Karo
+•	Pichle practical ka RESTFulApplications project dhundo
+•	Right click - Deploy
+
+Step 5: URL Copy Karo
+•	RESTFulApplications - RESTful Web Services - HelloWorld - Right click - Test Resource URI
+•	Browser mein URL dikhega: http://localhost:8080/RESTFulApplications/webresources/helloworld
+•	Yeh URL copy karo
+
+Step 6: RestClient.java mein Code Likho
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+
+public class RestClient {
+    public static void main(String args[]) {
+        Client c = ClientBuilder.newClient();
+        WebTarget t = c.target("http://localhost:8080/RESTFulApplications/webresources/helloworld");
+        String res = t.request(MediaType.TEXT_HTML).get(String.class);
+        System.out.println("Response " + res);
+        c.close();
+    }
+}
+
+Step 7: Run Karo
+•	RestClient.java - Right click - Run File
+•	Output: Response <html><body><h1>Hello World!</h1></body></html>
+
+Part 2 - Lowercase
+
+Step 8: StringRS Deploy Karo
+•	Pichle practical ka StringRS project - Right click - Deploy
+
+Step 9: URL Copy Karo
+•	StringRS - RESTful Web Services - stringdemo - HTTP Methods - toLower - Right click - Test Resource URI
+•	Warning popup aayega - Copy to Clipboard
+•	URL hoga: http://localhost:8080/StringRS/webresources/string/lower
+
+Step 10: RestClient.java Update Karo (Lowercase)
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+
+public class RestClient {
+    public static void main(String args[]) {
+        Client c = ClientBuilder.newClient();
+        WebTarget t = c.target("http://localhost:8080/StringRS/webresources/string/lower")
+                       .queryParam("msg", "HII");
+        String res = t.request(MediaType.TEXT_PLAIN).get(String.class);
+        System.out.println("Response " + res);
+        c.close();
+    }
+}
+
+Step 11: Run Karo
+•	RestClient.java - Right click - Run File
+•	Output: Response hii
+
+Part 3 - Uppercase
+
+Step 12: RestClient.java Update Karo (Uppercase)
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+
+public class RestClient {
+    public static void main(String args[]) {
+        Client c = ClientBuilder.newClient();
+        WebTarget t = c.target("http://localhost:8080/StringRS/webresources/string/upper")
+                       .queryParam("msg", "hii");
+        String res = t.request(MediaType.TEXT_PLAIN).get(String.class);
+        System.out.println("Response " + res);
+        c.close();
+    }
+}
+
+Step 13: Run Karo
+
+•	RestClient.java - Right click - Run File
+•	Output: Response HII
+
+Note: Lowercase test karte waqt uppercase text do (HII), aur uppercase test karte waqt lowercase text do (hii) - tabhi conversion dikhega
+________________________________________
+PRAC3 - JAX-RS Steps (iska continue for client is PRAC4)
+
+Part 1 - Hello World (Resource Update)
+
+Step 1: New Project Banao
+•	File - New Project - Java Web - Web Application - Next
+•	Project name: RESTFulApplications
+•	Next - Server: GlassFish Server 4.1 - Next - Finish
+
+Step 2: RESTful Web Service Banao
+•	Project par Right click - New - RESTful Web Services from Patterns
+•	Pattern: Simple Root Resource select karo - Next
+•	Fill karo: 
+o	Resource Package: helloWorld
+o	Path: helloworld
+o	Class Name: HelloWorld
+o	MIME Type: text/html
+•	Finish
+
+Step 3: HelloWorld.java mein Code Likho
+•	HelloWorld.java open karo
+•	getHtml() method mein yeh change karo:
+
+@GET
+@Produces("text/html")
+public String getHtml() {
+    return "<html><body><h1>Hello World!</h1></body></html>";
+}
+
+Step 4: PUT Method ke liye Code Likho
+•	putHtml() method ko replace karo with:
+
+@PUT
+@Path("{id}")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.TEXT_PLAIN)
+public Response updateMessage(@PathParam("id") String id, String message) {
+    String result = "Updated message ID :" + id + " with " + message;
+    return Response.ok(result).build();
+}
+•	Error aaye toh red dot click karo - Add import for javax.ws.rs.core.MediaType select karo
+•	Response par bhi red dot click karo - Add import for javax.ws.rs.core.Response select karo
+
+Step 5: Clean & Build, Deploy
+•	Project par Right click - Clean and Build
+•	Phir Right click - Deploy
+
+Step 6: GET Test Karo (Hello World)
+•	RESTful Web Services - HelloWorld - Right click - Test Resource URI
+•	Browser mein Hello World! dikhega
+
+Step 7: PUT Test Karo (Resource Update)
+•	RESTful Web Services - Right click - Test RESTful Web Services
+•	Web Test Client in Project select - OK
+•	Left side mein {id} click karo
+•	Method: PUT(application/json) select karo
+•	id: 24
+•	Content: Service Oriented Architecture
+•	Test click karo
+•	Output: Updated message ID :24 with Service Oriented Architecture
+
+Part 2 - StringRS (Upper/Lower Case)
+
+Step 8: New Project Banao
+•	File - New Project - Java Web - Web Application - Next
+•	Project name: StringRS - Next - Finish
+
+Step 9: RESTful Service Banao
+•	Project par Right click - New - RESTful Web Services from Patterns
+•	Pattern: Simple Root Resource - Next
+•	Fill karo: 
+o	Resource Package: str
+o	Path: string
+o	Class Name: stringdemo
+o	MIME Type: text/plain
+•	Finish
+
+Step 10: stringdemo.java mein Code Likho
+•	Auto-generated getHtml() method ke neeche yeh add karo:
+
+@GET
+@Path("upper")
+@Produces("text/plain")
+public String toUpper(@QueryParam("msg") String msg) {
+    return msg.toUpperCase();
+}
+
+@GET
+@Path("lower")
+@Produces("text/plain")
+public String toLower(@QueryParam("msg") String msg) {
+    return msg.toLowerCase();
+}
+•	@QueryParam par red dot - Add import for javax.ws.rs.QueryParam
+
+Step 11: Deploy & Test
+•	Right click project - Deploy
+•	RESTful Web Services - Right click - Test RESTful Web Services
+•	Left side mein string click karo - lower click karo
+•	msg field mein: JAIHIND - Test
+•	Output: jaihind
+•	Left side mein upper click karo
+•	msg field mein: jaihind - Test
+•	Output: JAIHIND
+________________________________________
+PRAC2 - JAX-WS UGC Web Service Steps
+
+Part A - Web Service Banana (Server Side)
+
+Step 1: New Project Banao
+•	File - New Project - Java Web - Web Application - Next
+•	Project name: Prac2 - Next
+•	Server: GlassFish Server 4.1 - Finish
+
+Step 2: Web Service Banao
+•	Source Packages par Right click - New - Web Service
+•	Fill karo: 
+o	Web Service Name: UGC
+o	Package: server
+o	Create Web Service from Scratch selected rahne do
+•	Finish
+
+Step 3: Operation Add Karo
+•	UGC.java open hoga - Design view mein Add Operation click karo
+•	Fill karo: 
+o	Name: getcollege
+o	Return Type: String
+o	Parameter add karo: Name: name, Type: String
+•	OK
+
+Step 4: Code Likho
+•	UGC.java mein Source tab pe jao
+•	getcollege method mein yeh code likho:
+
+@WebMethod(operationName = "getcollege")
+public String getcollege(@WebParam(name = "name") String name) {
+    if (name.equals("JHC")) {
+        return "A++";
+    }
+    else if (name.equals("Mumbai University")) {
+        return "A+";
+    }
+    else if (name.equals("Pune University")) {
+        return "A";
+    }
+    else {
+        return "College Not Found";
+    }
+}
+
+Step 5: Clean & Build - Deploy - Test
+•	Project par Right click - Clean and Build
+•	Right click - Deploy
+•	Web Services - UGC - Right click - Test Web Service
+•	Browser mein UGC Web Service Tester khulega
+•	getcollege field mein: JHC likho - getcollege button click karo
+•	Output: Method returned: "A++"
+
+Part B - Application Client (Java SE)
+
+Step 6: New Java Application Project
+•	File - New Project - Java - Java Application - Next
+•	Project name: P2_client
+•	Create Main Class checked rahne do (e.g. p2client.P2_client)
+•	Finish
+
+Step 7: Web Service Client Add Karo
+•	P2_client project par Right click - New - Web Service Client
+•	Fill karo: 
+o	WSDL URL: http://localhost:8080/Prac2/UGCService?WSDL
+o	Package: client
+•	Finish
+•	Project mein Web Service References - UGC - UGCPort - getcollege dikhega
+
+Step 8: getcollege Method Drag & Drop Karo
+•	P2_client.java open karo
+•	main method ke andar cursor rakho
+•	Left panel mein: Web Service References - UGC - UGCPort - getcollege - drag & drop karo main method ke andar
+•	Code auto-generate hoga
+
+Step 9: Code Update Karo
+
+public static void main(String[] args) {
+    String display = getcollege("JHC");
+    System.out.println("NAac rating of college is:" + display);
+}
+
+private static String getcollege(java.lang.String name) {
+    client.UGC_Service service = new client.UGC_Service();
+    client.UGC port = service.getUGCPort();
+    return port.getcollege(name);
+}
+
+Step 10: Run Karo
+•	P2_client.java - Right click - Run File
+•	Output: NAac rating of college is:A++
+
+Part C - Web Client (Servlet)
+
+Step 11: New Web Application Project
+•	File - New Project - Java Web - Web Application
+•	Project name: P2web_client - Next - Finish
+
+Step 12: Web Service Client Add Karo
+•	P2web_client par Right click - New - Web Service Client
+•	WSDL URL: http://localhost:8080/Prac2/UGCService?WSDL
+•	Package: (empty rehne do)
+•	Finish
+
+Step 13: index.html Update Karo
+
+<!DOCTYPE html>
+<html>
+  <head></head>
+  <body>
+    <h2>Rating Lookup</h2>
+    <form action="webappservlet" method="post">
+      <label>Enter College Name:</label><br><br>
+      <input type="text" name="collegeName" required>
+      <br><br>
+      <input type="submit" value="Get Rating">
+    </form>
+  </body>
+</html>
+
+Step 14: Servlet Banao
+•	Project par Right click - New - Servlet
+•	Class Name: webappservelt
+•	URL Pattern: /webappservelt
+•	Finish
+
+Step 15: Servlet Code Likho
+•	processRequest method mein:
+
+protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+    response.setContentType("text/html;charset=UTF-8");
+    try (PrintWriter out = response.getWriter()) {
+        out.println("<!DOCTYPE html>");
+        out.println("<html>");
+        out.println("<head></head>");
+        String Name = request.getParameter("collegeName"); //YEH ADD KARNA HAI
+        String rating = getcollege(Name); //THIS
+        out.println("</head>");
+        out.println("<body>");
+        out.println("<h1>NAAC Rating: " + rating + "</h1>"); //THIS
+        out.println("</body>");
+        out.println("</html>");
+    }
+}
+•	getcollege method drag & drop karo (Web Service References se) class ke andar
+
+Step 16: Deploy & Run
+•	Project - Right click - Deploy
+•	index.html - Right click - Run File
+•	Browser mein form aayega - College name likho - Get Rating
+•	Output: NAAC Rating: A++
+________________________________________
+PRAC1 - Calculator Web Service Steps
+
+Part A - Web Service Banana (Server Side)
+
+Step 1: New Project Banao
+•	File - New Project - Java Web - Web Application - Next
+•	Project name: CalculatorWS - Next
+•	Server: GlassFish Server 4.1 - Next
+•	Frameworks: Kuch select mat karo - Finish
+
+Step 2: Web Service Banao
+•	CalculatorWS par Right click - New - Web Service
+•	Fill karo: 
+o	Web Service Name: CalcWS
+o	Package: server
+o	Create Web Service from Scratch selected rahne do
+•	Finish
+
+Step 3: Operations Add Karo
+•	Web Services - CalcWS - Right click - Add Operation
+•	4 operations add karo: 
+1.	add - Return Type: int - Parameters: a (int), b (int)
+2.	sub - Return Type: int - Parameters: c (int), d (int)
+3.	mul - Return Type: int - Parameters: a (int), b (int)
+4.	div - Return Type: int - Parameters: c (int), d (int)
+•	Har ek ke baad OK
+
+Step 4: Code Likho
+•	CalcWS.java mein Source tab pe jao, har method mein return statement likho: BAAKI SAB DEFAULT HAI
+
+@WebMethod(operationName = "add")
+public int add(@WebParam(name = "a") int a, @WebParam(name = "b") int b) {
+    return a + b;
+}
+
+@WebMethod(operationName = "sub")
+public int sub(@WebParam(name = "c") int c, @WebParam(name = "d") int d) {
+    return c - d;
+}
+
+@WebMethod(operationName = "mul")
+public int mul(@WebParam(name = "a") int a, @WebParam(name = "b") int b) {
+    return a * b;
+}
+
+@WebMethod(operationName = "div")
+public int div(@WebParam(name = "c") int c, @WebParam(name = "d") int d) {
+    return c / d;
+}
+
+Step 5: Clean & Build - Deploy - Test
+•	Project par Right click - Clean and Build
+•	Right click - Deploy
+•	Web Services - CalcWS - Right click - Test Web Service
+•	Browser mein CalcWS Web Service Tester khulega
+•	add field mein: 20, 20 likho - add button click karo
+•	Output: Method returned: int: "40"
+
+Part B - Application Client (Java SE)
+
+Step 6: New Java Application Project Banao
+•	File - New Project - Java - Java Application - Next
+•	Project name: CalcClient
+•	Create Main Class checked rahne do (e.g. calcclient.CalcClient)
+•	Finish
+
+Step 7: Web Service Client Add Karo
+•	CalcClient project par Right click - New - Web Service Client
+•	Fill karo: 
+o	WSDL URL: http://localhost:8080/CalculatorWS/CalcWS?WSDL
+o	Package: client
+•	Finish
+•	Project mein Web Service References - CalcWS - CalcWSPort - add, sub, mul, div dikhega
+
+Step 8: Methods Drag & Drop Karo
+•	CalcClient.java open karo
+•	main method ke andar cursor rakho
+•	Left panel mein: Web Service References - CalcWS - CalcWSPort - add - drag & drop karo main method ke andar
+•	Same tarah sub, mul, div bhi drag & drop karo
+•	Code auto-generate hoga
+
+Step 9: Code Update Karo
+
+public static void main(String[] args) {
+    int a = add(50, 40);
+    System.out.println("Addition is " + a);
+
+    int s = sub(50, 40);
+    System.out.println("Subtraction is " + s);
+
+    int m = mul(20, 50);
+    System.out.println("Multiplication is " + m);
+
+    int d = div(50, 40);
+    System.out.println("Division is " + d);
+}
+
+Step 10: Run Karo
+•	CalcClient - Right click - Run
+•	Output: 
+o	Addition is 90
+o	Subtraction is 10
+o	Multiplication is 1000
+o	Division is 1
+
